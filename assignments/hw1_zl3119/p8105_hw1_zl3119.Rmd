@@ -7,24 +7,89 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# English environment
+Sys.setenv(LANGUAGE = "en")
+# import packages
+library(tidyverse)
 ```
 
-## R Markdown
+# Problem 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This problem is intended to emphasize variable types and introduce coercion; some awareness of how R treats numeric, character, and factor variables is necessary for working with these data types in practice.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Create a DataFrame
 
-```{r cars}
-summary(cars)
+Create a DataFrame comprised of:
+
+* a random sample of size 10 from a standard Normal distribution
+* a logical vector indicating whether elements of the sample are greater than 0
+* a character vector of length 10
+* a factor vector of length 10, with 3 different factor “levels”
+
+```{r Create DataFrame}
+# Generate a DataFrame with size 10 from a standard Normal distribution
+rnorm_df = tibble(
+  rnum = rnorm(10, sd = 1)
+) 
+
+final_df = rnorm_df %>% 
+  # a logical vector indicating whether elements of the sample are greater than 0
+  mutate(if_positive = ifelse(rnum > 0, TRUE, FALSE)) %>%
+  # a character vector of length 10
+  mutate(animals = sample(c('cat', 'dog', 'lion', 'panda', 'elephant'),size = 10, replace = TRUE)) %>%
+  # factor vector of length 10, with 3 different factor “levels”
+  mutate(value_size = factor(ifelse(rnum > - 0.5, ifelse(rnum < 0.5, 'medium', 'big'), 'small'))) 
+  
 ```
 
-## Including Plots
+## Take the mean of each variable 
 
-You can also embed plots, for example:
+```{r Take mean}
+mean(final_df$rnum)
+mean(final_df$if_positive)
+mean(final_df$animals)
+mean(final_df$value_size)
+```
+It only works for numerical and bool variables.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Convert variables to number
+Use "as.numeric" function to the logical, character, and factor variables
+
+```{r Convert to number by using as.numeric, echo = FALSE}
+#as.numeric(final_df$rnum)
+print('logical variable')
+as.numeric(final_df$if_positive)
+print('character variable')
+as.numeric(final_df$animals)
+print('factor variables')
+as.numeric(final_df$value_size)
+```
+logical variable will be transformed into 0 and 1. Character variable will be forced to become NA. Also, factors will be transformed into levels. And we can take the mean of levels as below.
+```{r}
+mean(as.numeric(final_df$value_size))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
