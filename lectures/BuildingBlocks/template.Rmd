@@ -1,0 +1,52 @@
+---
+title: "Simple document"
+author: Zheyan Liu
+date: Sep 2021
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+I'm an R Markdown document! 
+
+# Section 1
+
+Here's a **code chunk** that samples from 
+a _normal distribution_:
+
+```{r}
+samp = rnorm(100)
+length(samp)
+```
+I can take the mean of the sample, too!
+The mean is `r mean(samp)`.
+
+# Section 2
+
+The code bellow creates a data frame and generate a plot.
+```{r plot_example, eval = TRUE, echo = TRUE, message = FALSE, include = TRUE}
+# eval means, echo means the code, message means warnings or other messages, include means everything
+library(tidyverse)
+
+plot_df = tibble(
+  x = rnorm(500, mean=2, sd=4),
+  y = 3 - 4.2 * x + rnorm(500)
+)
+
+ggplot(plot_df, aes(x=x,y=y)) + geom_point()
+```
+
+The plot is great. It shows a linear relation as expected.
+
+
+Here is a list:
+
+* This is my first list item
+* Lists need at least two items
+  * sub item number 1
+  * sub item number 2
+* Third list item
+
+#### Table
