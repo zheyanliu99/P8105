@@ -138,7 +138,7 @@ Flipper length varys between each species, therefore we need to calculate mean f
 # remove missing values
 penguins[complete.cases(penguins[, c('species','flipper_length_mm')]), ] %>%
   group_by(species) %>%
-  summarise_at(vars(flipper_length_mm), list(name = mean))
+  summarise_at(vars(flipper_length_mm), list(avg = mean))
 ```
 
 ## Make a scatterplot of flipper_length_mm (y) vs bill_length_mm (x)
