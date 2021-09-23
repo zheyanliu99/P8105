@@ -69,27 +69,90 @@ logical variable will be transformed into 0 and 1. Character variable will be fo
 mean(as.numeric(final_df$value_size))
 ```
 
+# Problem 2
 
+```{r, include=FALSE}
+# install and import packages
+# install.packages("palmerpenguins")
+library(palmerpenguins)
+library(gridExtra)
+```
 
+## Descibe the penguins dataset
+Write a short description of the penguins dataset (not the penguins_raw dataset) using inline R code, including:
 
+* the data in this dataset, including names / values of important variables
+* the size of the dataset (using nrow and ncol)
+* the mean flipper length
+```{r}
+# read data
+data("penguins", package = "palmerpenguins")
+penguins
+```
 
+Brief introduction of the data.
 
+### Size of the DataFrame
 
+The penguins DataFrame contains `r nrow(penguins)` observations and `r ncol(penguins)` features.
 
+### Variables
 
+Use the "str" function to have a brief understanding of the data.
 
+```{r}
+str(penguins)
+```
 
+There are 3 factor variables and 5 numeric variables. And some of them contains missing value, the count of each missing value is listed below.
 
+```{r}
+apply(is.na(penguins), 2, FUN = sum)
+```
 
+**Factor Variables**
 
+```{r}
+factor_features = c('island', 'species', 'sex')
+apply(penguins[,factor_features], 2, unique)
+```
 
+For 3 factor variables, island takes on 3 levels (Biscoe, Dream and Torgersen), species takes on 3 levels (Adelie, Chinstrap, Gentoo) and sex takes on Female and Male. 
 
+**Numeric Variables**
 
+For 5 numeric variables, the quantiles of them are listed below (Missing value unincluded).
 
+```{r}
+numercal_features = c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'year')
+apply(penguins[, numercal_features], 2, quantile, na.rm = TRUE)
+```
 
+### Mean flipper_length_mm
 
+The mean flipper_length_mm of all three penguins is **`r round(mean(penguins$flipper_length_mm, na.rm = TRUE),2)`**
 
+Flipper length varys between each species, therefore we need to calculate mean flipper length of each species.
 
+```{r groupby and calculate mean}
+# remove missing values
+penguins[complete.cases(penguins[, c('species','flipper_length_mm')]), ] %>%
+  group_by(species) %>%
+  summarise_at(vars(flipper_length_mm), list(name = mean))
+```
+
+## Make a scatterplot of flipper_length_mm (y) vs bill_length_mm (x)
+
+```{r scatterplot of flipper_length_mm (y) vs bill_length_mm (x)}
+penguins_complete = penguins[complete.cases(penguins[, c('species','bill_length_mm','flipper_length_mm')]), ]
+ggplot(penguins_complete,aes(x=bill_length_mm, y=flipper_length_mm, color=species)) + geom_point()
+```
+Adelie is the smallest of three (smallest bill and flipper); Chinstrap has the longest bill; Gentoo has the biggest flipper.
+
+```{r}
+# Save the plot as pdf (scatter_plot_bill_flipper.pdf)
+ggsave('scatter_plot_bill_flipper.pdf', height=4, width=4)
+```
 
 
 
