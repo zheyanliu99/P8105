@@ -1,7 +1,59 @@
 ---
-title: "p8105_hw3_zl3119"
+title: "p8105_hw2_zl3119"
 author: "Zheyan"
 date: "2021/9/30"
 output: github_document
 ---
+
+```{r import packages, include=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+# Problem1
+Read and clean the Mr. Trash Wheel sheet:
+
+* specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+* use reasonable variable names
+* omit rows that do not include dumpster-specific data
+* round the number of sports balls to the nearest integer
+
+Read and clean precipitation data for 2018 and 2019. For each, omit rows without precipitation data and add a variable for year. Next, combine precipitation datasets and convert month to a character variable (the variable month.name is built into R and should be useful).
+
+Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in both resulting datasets, and give examples of key variables. For available data, what was the total precipitation in 2018? What was the median number of sports balls in a dumpster in 2017?
+
+## Read and clean Mr.Trash Wheel Sheet
+
+```{r Read and clean Mr.Trash Wheel,warning=FALSE}
+TW_df = 
+  read_excel('data/Trash-Wheel-Collection-Totals-8-6-19.xlsx', sheet = 'Mr. Trash Wheel', range = 'A2:N408') %>% 
+  janitor::clean_names() %>% 
+  drop_na('dumpster') %>% 
+  mutate(sports_balls = round(sports_balls))
+head(TW_df) %>% knitr::kable()
+```
+
+## Read and clean precipitation data for 2018 and 2019
+```{r Read and clean precipitation data}
+# read 2018 and 2019 data seperately
+prec2018_df = 
+  read_excel('data/Trash-Wheel-Collection-Totals-8-6-19.xlsx', sheet = '2018 Precipitation', range = 'A2:B14') %>% 
+  janitor::clean_names() %>% 
+  mutate(year = 2018) %>% 
+  drop_na()
+
+prec2019_df = 
+  read_excel('data/Trash-Wheel-Collection-Totals-8-6-19.xlsx', sheet = '2019 Precipitation', range = 'A2:B14') %>% 
+  janitor::clean_names() %>% 
+  mutate(year = 2019) %>% 
+  drop_na()
+
+# combine precipitation datasets
+prec_df = 
+  bind_rows(prec2018_df, prec2019_df) %>% 
+  mutate(month = month.name[month]) %>% 
+  relocate(year, month)
+
+prec_df
+```
 
