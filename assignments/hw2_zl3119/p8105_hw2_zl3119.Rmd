@@ -113,13 +113,68 @@ head(pols_df) %>% knitr::kable()
 
 Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
 
+```{r clean the data in snp}
+# try reading data in Excel format (cannot read csv file)
+snp_df_raw = read_excel('data/fivethirtyeight_datasets/snp.xlsx') %>% janitor::clean_names()
+date_list2 = c('month','day','year')
+
+snp_df = 
+  snp_df_raw %>% 
+  separate(date, sep = '/', into = date_list2) %>% 
+  mutate_at(date_list, as.integer) %>% 
+  mutate(month = month.name[month]) %>%
+  select(-day) %>% 
+  relocate(year, month)
+
+head(snp_df) %>% knitr::kable()
+```
 
 ## Step 3
 
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
 
-Join the datasets by merging snp into pols, and merging unemployment into the result.
+```{r unemployment data}
+# try reading data in Excel format (cannot read csv file)
+unemploy_df_raw = read_excel('data/fivethirtyeight_datasets/unemployment.xlsx') %>% janitor::clean_names()
 
+# temp month df to help convert month in unemployment data
+temp_month_df = 
+  tibble(month = substr(month.name, 1, 3),
+         month_longer = month.name)
+
+# tidy data
+unemploy_df = 
+  pivot_longer(
+    unemploy_df_raw, 
+    jan:dec,
+    names_to = 'month',
+    values_to = 'unemployment_rate') %>% 
+  # Get Month variable uppercase for first letter to match
+  mutate(month = str_to_title(month)) %>% 
+  # Get the longer str of month
+  left_join(temp_month_df, by = 'month') %>% 
+  mutate(month = month_longer) %>% 
+  select(-month_longer) %>% 
+  # Also convert year to int to match the temp_month_df
+  mutate(year = as.integer(year)) 
+
+head(unemploy_df) %>% knitr::kable()
+
+unemploy_df
+```
+
+Join the datasets by merging snp into pols, and merging unemployment into the result.
+```{r Merge all the data}
+# merging snp into pols
+result_df = 
+  left_join(pols_df, snp_df, by = c('year', 'month')) %>% 
+  left_join(unemploy_df, by = c('year', 'month'))
+
+snp_df
+result_df
+unemploy_df
+
+```
 
 ## Briefly introduce these data
 Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
