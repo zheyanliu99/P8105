@@ -91,11 +91,11 @@ This problem uses the FiveThirtyEight data; these data were gathered to create t
 ## Step 1
 
 First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
-```{r clean the data in pols-month}
+```{r clean the data in pols-month, warning=FALSE}
 # make_int = function(x)(as.integer(x))
 date_list = c('year','month','day')
 
-pols_df_raw = read_csv('data/fivethirtyeight_datasets/pols-month.csv') %>% janitor::clean_names()
+pols_df_raw = read_csv('data/fivethirtyeight_datasets/pols-month.csv', show_col_types = FALSE) %>% janitor::clean_names()
 
 pols_df = 
   pols_df_raw %>% 
@@ -113,7 +113,7 @@ head(pols_df) %>% knitr::kable()
 
 Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
 
-```{r clean the data in snp}
+```{r clean the data in snp, warning=FALSE}
 # try reading data in Excel format (cannot read csv file)
 snp_df_raw = read_excel('data/fivethirtyeight_datasets/snp.xlsx') %>% janitor::clean_names()
 date_list2 = c('month','day','year')
@@ -159,8 +159,6 @@ unemploy_df =
   mutate(year = as.integer(year)) 
 
 head(unemploy_df) %>% knitr::kable()
-
-unemploy_df
 ```
 
 Join the datasets by merging snp into pols, and merging unemployment into the result.
@@ -170,19 +168,21 @@ result_df =
   left_join(pols_df, snp_df, by = c('year', 'month')) %>% 
   left_join(unemploy_df, by = c('year', 'month'))
 
-snp_df
-result_df
-unemploy_df
-
+# showing more rows this time
+head(result_df, 15) %>% knitr::kable()
 ```
 
 ## Briefly introduce these data
 Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
-Note: we could have used a date variable as a key instead of creating year and month keys; doing so would help with some kinds of plotting, and be a more accurate representation of the data. Date formats are tricky, though. For more information check out the lubridate package in the tidyverse.
 
+**pols_df** contains `r nrow(pols_df)` oberservations and `r ncol(pols_df)` variables related to the number of national politicians who are democratic or republican at each month. Years in the dataset ranges from `r min(pull(pols_df, year))` to `r max(pull(pols_df, year))`. The key president variable *prez* indicates the president is democratic or republican.
 
+**snp_df** contains `r nrow(snp_df)` oberservations and `r ncol(snp_df)`  variables related to Standard & Poor’s stock market index (S&P), often used as a representative measure of stock market as a whole.  Years in the dataset ranges from `r min(pull(snp_df, year))` to `r max(pull(snp_df, year))`. The key president variable *close* is the closing values of the S&P stock index on the associated date.
 
+**unemploy_df** contains `r nrow(unemploy_df)` oberservations and `r ncol(unemploy_df)`  variables related to Standard & Poor’s stock market index (S&P), often used as a representative measure of stock market as a whole.  Years in the dataset ranges from `r min(pull(unemploy_df, year))` to `r max(pull(unemploy_df, year))`. The key president variable *unemployment_rate* is percentage of unemployment in each month.
+
+Since the range of years in the above 3 datasets vary, merge them togther into **result_df** with lefj-join can result in some variables with missing data.  In the final data, *close* contains `r sum(!complete.cases(pull(result_df, close)))` missing values. Also, *unemployment_rate*  contains `r sum(!complete.cases(pull(result_df, unemployment_rate)))` missing values
 
 
 
