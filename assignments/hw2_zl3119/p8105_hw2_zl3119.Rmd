@@ -25,11 +25,16 @@ Write a paragraph about these data; you are encouraged to use inline R. Be sure 
 ## Read and clean Mr.Trash Wheel Sheet
 
 ```{r Read and clean Mr.Trash Wheel,warning=FALSE}
-TW_df = 
+TW_df_raw = 
   read_excel('data/Trash-Wheel-Collection-Totals-8-6-19.xlsx', sheet = 'Mr. Trash Wheel', range = 'A2:N408') %>% 
-  janitor::clean_names() %>% 
+  janitor::clean_names() 
+
+TW_df = 
+  TW_df_raw %>% 
   drop_na('dumpster') %>% 
-  mutate(sports_balls = round(sports_balls))
+  mutate(sports_balls = round(sports_balls)) %>% 
+  relocate(dumpster, year, month, date)
+
 head(TW_df) %>% knitr::kable()
 ```
 
@@ -54,6 +59,52 @@ prec_df =
   mutate(month = month.name[month]) %>% 
   relocate(year, month)
 
-prec_df
+head(prec_df) %>% knitr::kable()
 ```
+
+## Write a paragraph about these data
+```{r, include = FALSE}
+nrow(prec_df)
+ncol(prec_df)
+sum(pull(prec2018_df, total))
+median(TW_df %>% 
+      filter(year == 2017) %>% 
+  pull(sports_balls))
+
+median(TW_df_raw %>% 
+      filter(year == 2017) %>% 
+  pull(sports_balls))
+
+```
+
+In Mr.Trash Wheel dataset there are **`r nrow(TW_df)`** observations and **`r ncol(TW_df)`** features. In precipitation dataset there are **`r nrow(prec_df)`** observations and **`r ncol(prec_df)`** features, including **`r nrow(prec2018_df)`** months in 2018 and **`r nrow(prec2019_df)`** months in 2019.
+
+In Mr.Trash Wheel dataset, *dumpster* is the count of dump time, ranging from `r min(pull(TW_df, dumpster))` to `r max(pull(TW_df, dumpster))`; *year*, *month* and *date* are time-related variables. Others are numeric variables including *weight_tons*, *volume_cubic_yards* and variables that are counts of objects. These objects include glass bottles, sport balls and grocery bags. In precipitation dataset, *year* and *month* are 
+time-related variables. *Total* means total inches of precipitation that month, it ranges from `r min(pull(prec_df, total))` to `r max(pull(prec_df, total))` with mean precipitation equals to `r round(mean(pull(prec_df, total)),2)`.
+ 
+For available data, the total precipitation in 2018 is **`r sum(pull(prec2018_df, total))`**. The median number of sports balls in a dumpster in 2017 is **`r median(TW_df %>% filter(year == 2017) %>% pull(sports_balls))`**. P.S. Also check that in raw data, the median is still **`r median(TW_df_raw %>% filter(year == 2017) %>% pull(sports_balls))`**.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
