@@ -184,12 +184,45 @@ Write a short paragraph about these datasets. Explain briefly what each dataset 
 
 Since the range of years in the above 3 datasets vary, merge them togther into **result_df** with lefj-join can result in some variables with missing data.  In the final data, *close* contains `r sum(!complete.cases(pull(result_df, close)))` missing values. Also, *unemployment_rate*  contains `r sum(!complete.cases(pull(result_df, unemployment_rate)))` missing values
 
+# Problem 3
+
+This problem uses data from NYC Open data on the popularity of baby names.
+
+## Load and tidy the data
+
+Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed
+
+```{r tidy data of baby names}
+babynames_df_raw = 
+  read_csv('data/Popular_Baby_Names.csv') %>% janitor::clean_names()
+
+babynames_df = 
+  babynames_df_raw %>% 
+  # drop duplicates
+  distinct() %>% 
+  # make first letter uppercase and the rest lower case
+  mutate(childs_first_name = str_to_title(childs_first_name)) %>% 
+  # remove rank (rank later)
+  select(-rank) %>% 
+  # group by each name and calcuate overall count
+  group_by(year_of_birth, gender, ethnicity, childs_first_name) %>%
+  summarize(overall_count = sum(count, na.rm = TRUE)) %>% 
+  # give a new rank by year_of_birth, gender, ethnicity
+  arrange(year_of_birth, gender, ethnicity, -overall_count) %>%
+  group_by(year_of_birth, gender, ethnicity) %>% 
+  # use rank() and min method to tie 
+  mutate(rank = rank(-overall_count, ties.method = 'min'))
+
+head(babynames_df, 10) %>% knitr::kable()
+```
 
 
+## Popularity of the name “Olivia”
+Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. Produce a similar table showing the most popular name among male children over time.
 
 
-
-
+## children with a name (y axis) against the rank in popularity of that nam
+Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
 
 
 
