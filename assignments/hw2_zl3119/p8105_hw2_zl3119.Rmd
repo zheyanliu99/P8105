@@ -218,7 +218,12 @@ head(babynames_df, 10) %>% knitr::kable()
 
 
 ## Popularity of the name “Olivia”
-Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. Produce a similar table showing the most popular name among male children over time.
+Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. 
+```{r popularity of “Olivia” over time}
+olivia_df = 
+```
+
+Produce a similar table showing the most popular name among male children over time.
 
 
 ## children with a name (y axis) against the rank in popularity of that nam
