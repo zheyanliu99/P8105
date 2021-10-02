@@ -8,6 +8,7 @@ output: github_document
 ```{r import packages, include=FALSE}
 library(tidyverse)
 library(readxl)
+library(ggplot2)
 ```
 
 # Problem1
@@ -192,7 +193,7 @@ This problem uses data from NYC Open data on the popularity of baby names.
 
 Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed
 
-```{r tidy data of baby names}
+```{r tidy data of baby names, warning=FALSE}
 babynames_df_raw = 
   read_csv('data/Popular_Baby_Names.csv') %>% janitor::clean_names()
 
@@ -200,19 +201,22 @@ babynames_df =
   babynames_df_raw %>% 
   # drop duplicates
   distinct() %>% 
-  # make first letter uppercase and the rest lower case
+  # tidy child First Name: make first letter uppercase and the rest lower case
   mutate(childs_first_name = str_to_title(childs_first_name)) %>% 
+  # tidy ethnicity
+  mutate(ethnicity = ifelse(ethnicity == 'ASIAN AND PACIFIC ISLANDER', 'ASIAN AND PACI', 
+                            ifelse(ethnicity == 'BLACK NON HISPANIC', 'BLACK NON HISP',ethnicity))) %>% 
   # remove rank (rank later)
   select(-rank) %>% 
   # group by each name and calcuate overall count
   group_by(year_of_birth, gender, ethnicity, childs_first_name) %>%
-  summarize(overall_count = sum(count, na.rm = TRUE)) %>% 
+  summarize(count = sum(count, na.rm = TRUE)) %>% 
   # give a new rank by year_of_birth, gender, ethnicity
-  arrange(year_of_birth, gender, ethnicity, -overall_count) %>%
+  arrange(year_of_birth, gender, ethnicity, -count) %>%
   group_by(year_of_birth, gender, ethnicity) %>% 
   # use rank() and min method to tie 
-  mutate(rank = rank(-overall_count, ties.method = 'min'))
-
+  mutate(rank = rank(-count, ties.method = 'min'))
+  
 head(babynames_df, 10) %>% knitr::kable()
 ```
 
@@ -220,14 +224,69 @@ head(babynames_df, 10) %>% knitr::kable()
 ## Popularity of the name “Olivia”
 Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. 
 ```{r popularity of “Olivia” over time}
+
+# temp df to count names each year for different ethnicity and gender
+namecnt_df = 
+  babynames_df %>% 
+  group_by(year_of_birth, gender,ethnicity) %>% 
+  summarize(countNames = n())
+
 olivia_df = 
+  babynames_df %>% 
+  filter(gender == 'FEMALE' & childs_first_name == 'Olivia') %>% 
+  left_join(namecnt_df, by = c('year_of_birth', 'gender', 'ethnicity')) %>% 
+  mutate(rank_precent = paste0(100*round(rank/countNames, 3),'%')) %>% 
+  ungroup %>% 
+  # select(-gender, -childs_first_name, -rank, -countNames) %>% 
+  select(year_of_birth, ethnicity, rank, rank_precent, count)
+
+olivia_df %>% knitr::kable()
 ```
+Olivia is the top 10% name for all ethnicities from 2011 to 2016, especially for ASIAN and WHITE NON HISPANIC, it is always a top 2% name. 
+
 
 Produce a similar table showing the most popular name among male children over time.
+```{r, warning=FALSE}
+# Find the most popular name for male each year
+PopularName_male_df = 
+  babynames_df %>% 
+  filter(gender == 'MALE') %>% 
+  group_by(year_of_birth, childs_first_name) %>% 
+  summarise(NameCnt = sum(count)) %>% 
+  filter(NameCnt == max(NameCnt)) %>% 
+  arrange(year_of_birth, -NameCnt)
+
+PopularName_male_df %>% knitr::kable()
+```
+Above table shows the most popular name each year.
 
 
-## children with a name (y axis) against the rank in popularity of that nam
+```{r}
+Boys_df = 
+  babynames_df %>% 
+  filter(gender == 'MALE') %>% 
+  inner_join(PopularName_male_df, by = c('year_of_birth', 'childs_first_name')) %>% 
+  left_join(namecnt_df, by = c('year_of_birth', 'gender', 'ethnicity')) %>% 
+  mutate(rank_precent = paste0(100*round(rank/countNames, 3),'%')) %>% 
+  ungroup %>% 
+  # select(-gender, -childs_first_name, -rank, -countNames) %>% 
+  select(year_of_birth, childs_first_name, ethnicity, rank, rank_precent, count)
+
+Boys_df %>% knitr::kable()
+```
+From year 2011 to 2013, Jayden is the top 2% name in every ethnicity excepts WHITE NON HISPANIC. In 2014 and 2015, Ethan is the top 6.1% name in all ethnicities. In 2015, Liam is the top 7% name in every ethnicity.
+
+## Visualization
 Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
+```{r, fig.width=9, fig.height=45}
+# prepare data
+whiteboys2016_df=
+  babynames_df %>% 
+  filter(gender == 'MALE' & ethnicity == 'WHITE NON HISPANIC' & year_of_birth == 2016) %>% 
+  mutate(childs_first_name = as.factor(childs_first_name))
+
+ggplot(whiteboys2016_df, aes(x = rank, y = childs_first_name)) + geom_point()
+```
 
 
 
