@@ -312,10 +312,13 @@ Finally, for male, white non-hispanic children born in 2016, produce a scatter p
 # prepare data
 whiteboys2016_df=
   babynames_df %>% 
-  filter(gender == 'MALE' & ethnicity == 'WHITE NON HISPANIC' & year_of_birth == 2016) %>% 
+  filter(gender == 'MALE' & ethnicity == 'WHITE NON HISP' & year_of_birth == 2016) %>% 
   mutate(childs_first_name = as.factor(childs_first_name))
 
 ggplot(whiteboys2016_df, aes(x = rank, y = childs_first_name)) + geom_point()
+
+# Save the plot
+ggsave('WhiteBoysNames2016.pdf', height=45, width=9)
 ```
 
 
