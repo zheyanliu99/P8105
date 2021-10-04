@@ -205,7 +205,8 @@ babynames_df =
   mutate(childs_first_name = str_to_title(childs_first_name)) %>% 
   # tidy ethnicity
   mutate(ethnicity = ifelse(ethnicity == 'ASIAN AND PACIFIC ISLANDER', 'ASIAN AND PACI', 
-                            ifelse(ethnicity == 'BLACK NON HISPANIC', 'BLACK NON HISP',ethnicity))) %>% 
+                            ifelse(ethnicity == 'BLACK NON HISPANIC', 'BLACK NON HISP',
+                                   ifelse(ethnicity == 'WHITE NON HISPANIC', 'WHITE NON HISP', ethnicity)))) %>% 
   # remove rank (rank later)
   select(-rank) %>% 
   # group by each name and calcuate overall count
@@ -223,7 +224,7 @@ head(babynames_df, 10) %>% knitr::kable()
 
 ## Popularity of the name “Olivia”
 Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. 
-```{r popularity of “Olivia” over time}
+```{r popularity of “Olivia” over time, warning=FALSE}
 
 # temp df to count names each year for different ethnicity and gender
 namecnt_df = 
@@ -235,14 +236,29 @@ olivia_df =
   babynames_df %>% 
   filter(gender == 'FEMALE' & childs_first_name == 'Olivia') %>% 
   left_join(namecnt_df, by = c('year_of_birth', 'gender', 'ethnicity')) %>% 
-  mutate(rank_precent = paste0(100*round(rank/countNames, 3),'%')) %>% 
+  mutate(rank_precent = paste0(100*round(rank/countNames, 3),'%')) %>%
+  # mutate(rank_precent = rank/countNames)
   ungroup %>% 
   # select(-gender, -childs_first_name, -rank, -countNames) %>% 
   select(year_of_birth, ethnicity, rank, rank_precent, count)
 
-olivia_df %>% knitr::kable()
+head(olivia_df) %>% knitr::kable()
 ```
-Olivia is the top 10% name for all ethnicities from 2011 to 2016, especially for ASIAN and WHITE NON HISPANIC, it is always a top 2% name. 
+Variable rank_precent is calulated by rank/count. Rank is the name "Olivia" rank in different years and ethnicities. Count is the count of all the names that appears in the dataset in one year for a specific ethnicity.
+
+Then, make the table wider by having rows for ethnicities and columns for year.
+
+```{r wider table for Olivia}
+olivia_df %>% 
+  ungroup %>% 
+  select(year_of_birth, ethnicity, rank_precent) %>% 
+  pivot_wider(
+    names_from = 'year_of_birth',
+    values_from = 'rank_precent'
+  ) %>% knitr::kable()
+```
+
+Olivia is the top 10% name for all ethnicities from 2011 to 2016, especially for ASIAN and WHITE NON HISPANIC, it is always a top 3% name. 
 
 
 Produce a similar table showing the most popular name among male children over time.
@@ -258,7 +274,7 @@ PopularName_male_df =
 
 PopularName_male_df %>% knitr::kable()
 ```
-Above table shows the most popular name each year.
+Above table shows the most popular name each year for boys, which includes Jayden, Ethan and Liam.
 
 
 ```{r}
@@ -272,8 +288,22 @@ Boys_df =
   # select(-gender, -childs_first_name, -rank, -countNames) %>% 
   select(year_of_birth, childs_first_name, ethnicity, rank, rank_precent, count)
 
-Boys_df %>% knitr::kable()
+head(Boys_df) %>% knitr::kable()
 ```
+
+The above table is the orignial longer table, rank_precent is calculated with the same method. The difference of this wider table with that of "Olivia" is that now it has two rows variable (childs_first_name and ethnicity)
+
+```{r}
+Boys_df %>% 
+  ungroup %>% 
+  select(year_of_birth, childs_first_name, ethnicity, rank_precent) %>% 
+  pivot_wider(
+    names_from = 'year_of_birth',
+    values_from = 'rank_precent'
+  ) %>% knitr::kable()
+```
+The result is like a diagonal matrix because names have different popular time.
+
 From year 2011 to 2013, Jayden is the top 2% name in every ethnicity excepts WHITE NON HISPANIC. In 2014 and 2015, Ethan is the top 6.1% name in all ethnicities. In 2015, Liam is the top 7% name in every ethnicity.
 
 ## Visualization
