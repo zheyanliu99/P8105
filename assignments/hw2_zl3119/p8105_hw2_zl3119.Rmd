@@ -27,7 +27,7 @@ Write a paragraph about these data; you are encouraged to use inline R. Be sure 
 
 ```{r Read and clean Mr.Trash Wheel,warning=FALSE}
 TW_df_raw = 
-  read_excel('data/Trash-Wheel-Collection-Totals-8-6-19.xlsx', sheet = 'Mr. Trash Wheel', range = 'A2:N408') %>% 
+  read_excel('data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx', sheet = 'Mr. Trash Wheel', range = 'A2:N408') %>% 
   janitor::clean_names() 
 
 TW_df = 
