@@ -129,10 +129,26 @@ Lagged variables
 weather_df %>% 
   group_by(name) %>% 
   mutate(
-    lagged_tmax = lag(tmax, n =1)
-  )
+    lagged_tmax = lag(tmax, n =1),
+    tmax_diff = tmax - lagged_tmax
+  ) %>% 
+  summarise(diff_sd = sd(tmax_diff, na.rm = TRUE))
 ```
 
+# Limitations
+
+What if my 'summary' is a linear model ...
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  summarise(cor_tmin_tmax = cor(tmin, tmax, use = 'complete'))
+
+# does not work for lm
+weather_df %>% 
+  filter(name == 'CentralPark_NY') %>% 
+  lm(tmax ~ tmin, data = .)
+```
 
 
 
