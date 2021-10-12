@@ -220,8 +220,48 @@ tmax_tmin_p / (prcp_dens_p + tmax_date_p)
 ```
 
 
+## Data manipulation
 
+Control your factors.
 
+```{r}
+# fix alphabetly order of name
+weather_df %>% 
+  mutate(
+    name = factor(name),
+    name = forcats::fct_relevel(name, c('Waikiki_HA'))
+  ) %>% 
+  ggplot(aes(x = name, y = tmax, fill = name)) +
+  geom_violin(alpha = .5) 
+```
 
+What if I wanted densities for tmin and tmax simultaneously?
+
+```{r}
+weather_df %>% 
+  filter(name == 'CentralPark_NY') %>% 
+  pivot_longer(
+    tmax:tmin,
+    names_to = 'observation',
+    values_to = 'temperatures'
+  ) %>% 
+  ggplot(aes(x = temperatures, fill = observation)) +
+  geom_density(alpha = .5) +
+  facet_grid(. ~ name)
+```
+
+add some facets
+
+```{r}
+weather_df %>% 
+  pivot_longer(
+    tmax:tmin,
+    names_to = 'observation',
+    values_to = 'temperatures'
+  ) %>% 
+  ggplot(aes(x = temperatures, fill = observation)) +
+  geom_density(alpha = .5) +
+  facet_grid(. ~ name)
+```
 
 
