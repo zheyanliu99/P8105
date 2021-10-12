@@ -1,0 +1,98 @@
+---
+title: "Visualization2"
+author: "Zheyan"
+date: "2021/10/11"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(patchwork)
+```
+
+# Weather data
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+
+head(weather_df)
+```
+# Lets plot!
+
+## Label and title
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    title = 'Temperature Plot',
+    x = 'Min Temperature',
+    y = 'Max Temperature',
+    caption = 'Data from rnoaa package; temperature in 2017'
+  )
+```
+
+## Scales
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    title = 'Temperature Plot',
+    x = 'Min Temperature',
+    y = 'Max Temperature',
+    caption = 'Data from rnoaa package; temperature in 2017'
+  ) +
+  scale_x_continuous(
+    breaks = c(-15, 0, 15),
+    labels = c('-15 C', '0 C', '15 C')
+  ) +
+  scale_y_continuous(
+    trans = 'sqrt',
+    position = 'right'
+  )
+```
+
+Look at color scales
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.5) +
+  labs(
+    title = 'Temperature Plot',
+    x = 'Min Temperature',
+    y = 'Max Temperature',
+    caption = 'Data from rnoaa package; temperature in 2017'
+  ) +
+  scale_color_hue(
+    name = 'Location',
+    h = c(100,300)
+  )
+```
+
+Also, we can do this with viridis package
+
+
+
+
+
+
+
+
