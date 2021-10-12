@@ -83,14 +83,55 @@ weather_df %>%
 ```
 # More general summaries
 
-```{r}
+Lets count , take means, look at SDs
 
+```{r}
+weather_df %>% 
+  group_by(name,month) %>% 
+  summarise(
+    n_obs = n(),
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    meidan_tmax = median(tmax, na.rm = TRUE),
+    sd_max = sd(tmax, na.rm = TRUE)
+  ) %>% 
+  ggplot(aes(x = month, y = mean_tmax, color = name))+
+  geom_point() + geom_line()
 ```
 
 
+## grouped `mutate`
 
+```{r}
+weather_df %>% 
+  mutate(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    centered_tmax = tmax - mean_tmax
+  ) %>% 
+  ggplot(aes(x = date, y = centered_tmax, color = name)) +
+  geom_point()
+```
+# Window Functions
 
+min_rank
 
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(
+    tmax_rank = min_rank(-tmax)
+  ) %>% 
+  filter(tmax_rank < 2)
+```
+
+Lagged variables
+
+```{r}
+weather_df %>% 
+  group_by(name) %>% 
+  mutate(
+    lagged_tmax = lag(tmax, n =1)
+  )
+```
 
 
 
