@@ -143,18 +143,6 @@ This problem uses the BRFSS data.
 library(p8105.datasets)
 data("BRFSS")
 
-brfss = 
-  brfss_smart2010 %>%
-  janitor::clean_names() %>%
-  distinct() %>%
-  filter(topic == "Overall Health") %>%
-  rename(
-    state = locationabbr,
-    county = locationdesc
-  ) %>%
-  mutate(
-    response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent"))
-  )
 ```
 
 
@@ -162,7 +150,9 @@ brfss =
 BRFSS
 ```
 
+# Problem 3
 
+Accelerometers have become an appealing alternative to self-report techniques for studying physical activity in observational studies and clinical trials, largely because of their relative objectivity. During observation periods, the devices measure “activity counts” in a short period; one-minute intervals are common. Because accelerometers can be worn comfortably and unobtrusively, they produce around-the-clock observations.
 
 
 
