@@ -146,40 +146,91 @@ data("BRFSS")
 ```
 
 
-```{r}
-BRFSS
-```
 
 # Problem 3
 
 Accelerometers have become an appealing alternative to self-report techniques for studying physical activity in observational studies and clinical trials, largely because of their relative objectivity. During observation periods, the devices measure “activity counts” in a short period; one-minute intervals are common. Because accelerometers can be worn comfortably and unobtrusively, they produce around-the-clock observations.
 
+## Load, tidy, and wrangle the data. 
 
+Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. Describe the resulting dataset (e.g. what variables exist, how many observations, etc
+```{r, message=FALSE}
+accel = 
+  read_csv("data/accel_data.csv") %>%
+  janitor::clean_names() %>% 
+  mutate(
+    weekday_end = ifelse(day %in% c('Saturday', 'Sunday'), 'Weekend', 'Weekday'),
+    week = as.integer(week),
+    day_id = as.integer(day_id)
+  ) %>%
+  relocate(day_id, week, day, weekday_end)
 
+head(accel,14) %>%
+  knitr::kable()
+```
 
+The  dataset has `r nrow(accel)` observations, and contains `r ncol(accel)` variables. There are four date variables : 'day_id', 'week', 'day_id', 'day' , 'weekday_end'(weekday or weekend), and 1440 activities variables which count for each minute of a 24-hour day starting at midnight.
 
+## Total activity variable for each day
 
+```{r}
+accel_sum = 
+  accel %>% 
+    mutate(activity_sum = rowSums(across(activity_1:activity_1440))) %>% 
+    select(day_id, week, day, weekday_end, activity_sum)
+  # ggplot(aes(x = day_id, y = activity_sum, color = week)) +
+  # ggplot() +
+  # geom_bar(aes(x = day_id, y = activity_sum, fill = week),stat="identity",show.legend = FALSE)
+accel_sum %>% 
+  knitr::kable()
+```
 
+Draw a Barplot groupby day
 
+```{r}
+accel_sum %>% 
+  group_by(day) %>% 
+  summarise(activitysum_mean = mean(activity_sum)) %>% 
+  mutate(day = factor(day, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday','Friday', 'Saturday'))) %>%
+  ggplot() +
+  geom_bar(aes(x = day, y = activitysum_mean, fill = day),stat="identity",show.legend = FALSE)
+```
 
+We can see from the table and the barplot that. The activity sum is high on Wednesday, Thursday and Friday, low in Saturday.
 
+## Inspection activity over the course of the day
 
+Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week
+```{r}
+accel_longer = 
+  accel %>%
+  select(week, day, activity_1:activity_1440) %>%
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "activity_time",
+    values_to = "activity"
+  ) %>%
+  separate(activity_time, c(NA, 'activity_time'), sep = '_') %>% 
+  mutate(
+    activity_time = as.integer(activity_time),
+    day = factor(day, levels = c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday','Friday', 'Saturday'))) 
 
+accel_longer %>%
+  ggplot(aes(x = activity_time, y = activity, color = day)) +
+  geom_point(alpha = 0.5) 
+```
 
+In Sunday, the man is active in the mid of the day; In Friday, Saturday and Sunday, the man is active in the end of the day. In addition, he is not active from 0 to 300, this is probabaly his regular sleeping hours.
 
+Also we can make a groupby day plot to show day contrast (Monday:Sunday) more clearly
 
-
-
-
-
-
-
-
-
-
-
-
-
+```{r, message=FALSE}
+accel_longer %>% 
+  group_by(day, activity_time) %>% 
+  summarise(mean_activity = mean(activity)) %>%
+  ggplot(aes(x = activity_time, y = mean_activity, color = day)) +
+  geom_point(alpha = 0.5) 
+```
 
 
 
