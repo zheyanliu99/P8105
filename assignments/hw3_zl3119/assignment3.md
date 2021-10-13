@@ -140,7 +140,133 @@ hour_dow %>%
 
 # Problem 2
 
-This problem uses the BRFSS data.
+This problem uses the BRFSS data. 2002-2010. BRFSS SMART County
+Prevalence land line only data. The Selected Metropolitan Area Risk
+Trends (SMART) project uses the Behavioral Risk Factor Surveillance
+System (BRFSS) to analyze the data of selected counties with 500 or more
+respondents. BRFSS data can be used to identify emerging health
+problems, establish and track health objectives, and develop and
+evaluate public health policies and programs.
+
+## Data Cleaning
+
+-   format the data to use appropriate variable names;
+-   focus on the “Overall Health” topic
+-   include only responses from “Excellent” to “Poor”
+-   organize responses as a factor taking levels ordered from “Poor” to
+    “Excellent”
+
+``` r
+brfss_smart2010_raw = 
+  brfss_smart2010 %>% janitor::clean_names()
+
+brfss_smart2010 =
+  brfss_smart2010_raw %>% 
+    filter(topic == 'Overall Health', 
+           response %in% c("Poor", "Fair", "Excellent")) %>% 
+    distinct() %>% 
+    mutate(response = factor(response, levels = c("Poor", "Fair", "Excellent")))
+```
+
+## Using this dataset, do or answer the following
+
+In 2002, which states were observed at 7 or more locations? What about
+in 2010?
+
+``` r
+states_cnt = 
+  brfss_smart2010 %>% 
+  filter(year == 2002 | year == 2010) %>% 
+  group_by(year, locationabbr) %>% 
+  summarise(location_cnt = n_distinct(locationdesc)) %>% 
+  filter(location_cnt >= 7) 
+
+states_cnt %>% 
+  knitr::kable()
+```
+
+| year | locationabbr | location_cnt |
+|-----:|:-------------|-------------:|
+| 2002 | CT           |            7 |
+| 2002 | FL           |            7 |
+| 2002 | MA           |            8 |
+| 2002 | NC           |            7 |
+| 2002 | NJ           |            8 |
+| 2002 | PA           |           10 |
+| 2010 | CA           |           12 |
+| 2010 | CO           |            7 |
+| 2010 | FL           |           41 |
+| 2010 | MA           |            9 |
+| 2010 | MD           |           12 |
+| 2010 | NC           |           12 |
+| 2010 | NE           |           10 |
+| 2010 | NJ           |           19 |
+| 2010 | NY           |            9 |
+| 2010 | OH           |            8 |
+| 2010 | PA           |            7 |
+| 2010 | SC           |            7 |
+| 2010 | TX           |           16 |
+| 2010 | WA           |           10 |
+
+In 2002, 6 states were observed at 7 or more locations. They
+areConnecticut, Florida, Massachusetts, North Carolina, New Jersey, and
+Pennsylvania.
+
+In 2010, 14 states were observed at 7 or more locations. They are
+California, Colorado, Florida, Florida, Massachusetts, Maryland, North
+Carolina, Nebraska, New Jersey, New York, Ohio, Pennsylvania, South
+Carolina, Texas and Washington.
+
+Construct a dataset that is limited to Excellent responses, and
+contains, year, state, and a variable that averages the data_value
+across locations within a state. Make a “spaghetti” plot of this average
+value over time within a state (that is, make a plot showing a line for
+each state across years – the geom_line geometry and group aesthetic
+will help)
+
+``` r
+excellet_response_df = 
+  brfss_smart2010 %>% 
+    # select(year, locationabbr, response, sample_size, data_value) %>% 
+    filter(response == 'Excellent') %>% 
+    # we should use weighted mean of data_value 
+    mutate(data_value_sum = sample_size*data_value) %>% 
+    group_by(year, locationabbr) %>% 
+    summarise(nsample = sum(sample_size),
+              data_value_sumall = sum(data_value_sum)) %>% 
+    mutate(data_value_weightedmean = data_value_sumall/nsample) %>% 
+    select(year, locationabbr, data_value_weightedmean)
+
+excellet_response_df %>% 
+  ggplot(aes(x = year, y = data_value_weightedmean, group = locationabbr, color = locationabbr)) +
+  # Not show legend, there is too many states to identify 
+  geom_line(show.legend = FALSE)
+```
+
+<img src="assignment3_files/figure-gfm/Construct dataset and plot-1.png" width="95%" />
+
+The weighted average of data value are fluctuate from 2002 to 2010 in
+different states.
+
+Make a two-panel plot showing, for the years 2006, and 2010,
+distribution of data_value for responses (“Poor” to “Excellent”) among
+locations in NY State.
+
+``` r
+brfss_smart2010 %>%
+  filter(year == 2006 | year == 2010,
+         locationabbr == "NY") %>%
+  select(year, locationabbr, response, data_value) %>%
+  drop_na() %>% 
+  ggplot(aes(x = response, y = data_value)) +
+  geom_point() +
+  facet_grid(.~ year)
+```
+
+<img src="assignment3_files/figure-gfm/unnamed-chunk-9-1.png" width="95%" />
+
+The data value is positively related to response. In 2010, people with
+excellent response has smaller data value.
 
 # Problem 3
 
@@ -259,7 +385,7 @@ accel_sum %>%
   geom_bar(aes(x = day, y = activitysum_mean, fill = day),stat="identity",show.legend = FALSE)
 ```
 
-<img src="assignment3_files/figure-gfm/unnamed-chunk-9-1.png" width="95%" />
+<img src="assignment3_files/figure-gfm/unnamed-chunk-12-1.png" width="95%" />
 
 We can see from the table and the barplot that. The activity sum is high
 on Wednesday, Thursday and Friday, low in Saturday.
@@ -288,7 +414,7 @@ accel_longer %>%
   geom_point(alpha = 0.5) 
 ```
 
-<img src="assignment3_files/figure-gfm/unnamed-chunk-10-1.png" width="95%" />
+<img src="assignment3_files/figure-gfm/unnamed-chunk-13-1.png" width="95%" />
 
 In Sunday, the man is active in the mid of the day; In Friday, Saturday
 and Sunday, the man is active in the end of the day. In addition, he is
@@ -305,4 +431,4 @@ accel_longer %>%
   geom_point(alpha = 0.5) 
 ```
 
-<img src="assignment3_files/figure-gfm/unnamed-chunk-11-1.png" width="95%" />
+<img src="assignment3_files/figure-gfm/unnamed-chunk-14-1.png" width="95%" />
