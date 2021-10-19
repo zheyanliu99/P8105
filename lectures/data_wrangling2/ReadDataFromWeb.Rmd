@@ -1,0 +1,152 @@
+---
+title: "ReadDataFromWeb"
+author: "Zheyan"
+date: "10/19/2021"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(rvest)
+library(httr)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "95%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = 'bottom'))
+
+options(
+  ggplot2.continuous.colour = 'viridis',
+  ggplot2.continuous.fill = 'viridis'
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+# Extracting Table
+
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+drug_use_html = read_html(url)
+
+drug_use_html
+
+```
+Read the first table, transform it into readable format
+
+```{r}
+drug_use_html %>%
+  html_table() %>% 
+  first() %>% 
+  slice(-1)
+```
+# CSS selecter
+
+Learn how to use selectorGadget
+
+## Star Wars data
+```{r}
+swm_html = 
+  read_html("https://www.imdb.com/list/ls070150896/")
+```
+
+```{r}
+title_vec = 
+  swm_html %>%
+  html_elements(".lister-item-header a") %>%
+  html_text()
+
+gross_rev_vec = 
+  swm_html %>%
+  html_elements(".text-small:nth-child(7) span:nth-child(5)") %>%
+  html_text()
+
+runtime_vec = 
+  swm_html %>%
+  html_elements(".runtime") %>%
+  html_text()
+
+swm_df = 
+  tibble(
+    title = title_vec,
+    rev = gross_rev_vec,
+    runtime = runtime_vec)
+```
+
+## Napoleon dynamite
+
+```{r}
+url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=1"
+
+dynamite_html = read_html(url)
+
+review_titles = 
+  dynamite_html %>%
+  html_elements(".a-text-bold span") %>%
+  html_text()
+
+review_stars = 
+  dynamite_html %>%
+  html_elements("#cm_cr-review_list .review-rating") %>%
+  html_text()
+
+review_text = 
+  dynamite_html %>%
+  html_elements(".review-text-content span") %>%
+  html_text()
+
+reviews = tibble(
+  title = review_titles,
+  stars = review_stars,
+  text = review_text
+)
+
+```
+
+# Read from API
+
+Get some data from an API about water
+
+```{r}
+nyc_water = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
+  content("parsed")
+```
+
+Let's see Json 
+
+```{r}
+nyc_water = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.json") %>% 
+  content("text") %>%
+  jsonlite::fromJSON() %>%
+  as_tibble()
+```
+
+BRFSS data via api
+
+```{r}
+brfss_smart2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
+      query = list("$limit" = 5000)) %>% 
+  content("parsed")
+```
+
+Pokemon
+
+```{r}
+poke =  
+  GET("http://pokeapi.co/api/v2/pokemon/1") %>%
+  content()
+
+poke$name
+## [1] "bulbasaur"
+poke$height
+## [1] 7
+poke$abilities
+```
+
