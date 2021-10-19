@@ -1,0 +1,120 @@
+---
+title: "Case Study"
+author: "Jeff Goldsmith"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(leaflet)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Load a dataset
+
+```{r}
+data("nyc_airbnb")
+```
+
+* How many rentals are there? Of what type? In what places?
+* Is price correlated with review score?
+* Which neighborhood is most popular? Most expensive?
+* Which neighborhood has the highest reviews?
+* Is availability related to price?
+* Is room type related to neighborhood?
+* Is length of stay related to neighborhood group (borough)?
+
+```{r}
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(stars = review_scores_location / 2) %>% 
+  rename(borough = neighbourhood_group)
+```
+
+Let's try to count things:
+
+```{r}
+nyc_airbnb %>% 
+  count(borough, room_type) %>% 
+  pivot_wider(
+    names_from = room_type,
+    values_from = n
+  )
+```
+
+
+Let's look at price and room type ...
+
+```{r}
+nyc_airbnb %>% 
+  ggplot(aes(x = stars, y = price)) + 
+  geom_point() + 
+  facet_grid(. ~ room_type)
+```
+
+Price and neighborhood
+
+```{r}
+nyc_airbnb %>% 
+  filter(borough == "Manhattan") %>% 
+  group_by(neighbourhood) %>% 
+  summarize(mean_price = mean(price, na.rm =TRUE)) %>% 
+  arrange(mean_price)
+
+nyc_airbnb %>% 
+  filter(
+    borough == "Manhattan",
+    price <= 1000) %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  ggplot(aes(x = neighbourhood, y = price)) + 
+  geom_boxplot() + 
+  coord_flip() + 
+  facet_grid(. ~ room_type)
+```
+
+Price vs location
+
+```{r}
+nyc_airbnb %>%
+  filter(price < 500) %>% 
+  sample_n(5000) %>% 
+  ggplot(aes(x = lat, y = long, color = price)) +
+  geom_point(alpha = .5)
+```
+
+
+
+## retry leaflet
+
+```{r}
+pal = colorNumeric("viridis", NULL)
+
+nyc_airbnb %>% 
+  filter(price < 500) %>% 
+  sample_n(1000) %>% 
+  mutate(
+    label = str_c("<b>Stars: ", stars, "</b><br>Price: ", price, sep = "")
+  ) %>% 
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addCircleMarkers(~lat, ~long, radius = 1, popup = ~ label, color = ~pal(price))
+```
+
+
+
