@@ -7,24 +7,222 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+library(p8105.datasets)
+
+library(patchwork)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "95%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = 'bottom'))
+
+options(
+  ggplot2.continuous.colour = 'viridis',
+  ggplot2.continuous.fill = 'viridis'
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
-## R Markdown
+# String and regex
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Detect and select
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+string_vec = c("my", "name", "is", "jeff")
 
-```{r cars}
-summary(cars)
+str_detect(string_vec, "jeff")
+
+string_vec[str_detect(string_vec, "jeff")]
+```
+Replace
+
+```{r}
+str_replace(string_vec, "jeff", "Jeff")
 ```
 
-## Including Plots
+You can designate a list of characters that will count as a match.
 
-You can also embed plots, for example:
+```{r}
+string_vec = c(
+  "Y'all remember Pres. HW Bush?",
+  "I saw a green bush",
+  "BBQ and Bushwalking at Molonglo Gorge",
+  "BUSH -- LIVE IN CONCERT!!"
+  )
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+str_detect(string_vec,"[Bb]ush")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+You don’t have to list these; instead, you can provide a range of letters or numbers that count as a match.
+
+```{r}
+#sth starts with number
+string_vec = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+
+str_detect(string_vec, "^[0-9][a-zA-Z]")
+```
+
+The character . matches anything.
+
+```{r}
+string_vec = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
+
+str_detect(string_vec, "7.11")
+```
+
+Some characters are “special”. These include [ and ], ( and ), and .. If you want to search for these, you have to indicate they’re special using \. Unfortunately, \ is also special, so things get weird.
+
+```{r}
+string_vec = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
+
+str_detect(string_vec, "\\[")
+```
+
+# Factors
+
+```{r}
+factor_vec = factor(c('male', 'female', 'male', 'female'))
+
+as.numeric(factor_vec)
+
+factor_vec = fct_relevel(factor_vec, 'male')
+```
+
+## NSDUH
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+table_marj = 
+  read_html(nsduh_url) %>% 
+  html_table() %>% 
+  first() %>%
+  slice(-1)
+
+table_marj
+```
+
+Clean Data
+
+```{r}
+data_marj = 
+  table_marj %>% 
+    select(-contains('P Value')) %>% 
+    pivot_longer(
+      -State,
+      names_to = 'age_year',
+      values_to = 'percent') %>% 
+    separate(age_year, into = c('age', 'year'), sep = '\\(') %>% 
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = as.numeric(str_replace(percent, '[a-c]$', ''))
+    ) %>% 
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+
+```
+
+Do DataFrame stuff
+
+```{r}
+  
+data_marj %>%
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% 
+  ggplot(aes(x = State, y = percent, color = year)) + 
+    geom_point() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## NYC restaurants
+
+```{r}
+data("rest_inspec")
+
+rest_inspec %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  pivot_wider(names_from = grade, values_from = n)
+```
+
+```{r}
+rest_inspec = 
+  rest_inspec %>% 
+  filter(
+    str_detect(grade, '[ABC]'),
+    !(boro == 'Missing')
+  )
+
+rest_inspec %>% 
+  janitor::tabyl(boro, grade)
+
+```
+
+Focus on Pizza rating
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "Pizza")) %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  pivot_wider(names_from = grade, values_from = n)
+```
+
+
+That doesn’t look right – for sure there are more pizza place ratings than that! The problem is that the match in str_detect is case-sensitive until we tell it not to be:
+
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  pivot_wider(names_from = grade, values_from = n)
+```
+Might help to have things in a different order – maybe number of pizza places? Fortunately this can be done using fct_infreq.
+
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>%
+  mutate(boro = fct_infreq(boro),
+         # How to change Manhatten into cities
+         boro = fct_recode(boro, 'The City' = 'MANHATTAN')) %>%
+  ggplot(aes(x = boro, fill = grade)) + 
+  geom_bar() 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
