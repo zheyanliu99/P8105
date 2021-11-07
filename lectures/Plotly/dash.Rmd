@@ -50,33 +50,17 @@ nyc_airbnb %>%
 ## Boxplot
 
 ```{r}
-nyc_airbnb %>% 
-  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>%  
-  plot_ly(y = ~price, color = ~neighbourhood, type = "box", colors = "viridis")
+
+nyc_airbnb  %>% 
+  plot
+
+
 ```
 
 
 
-## Barplot
-
-```{r}
-nyc_airbnb %>% 
-  count(neighbourhood) %>% 
-  mutate(neighbourhood = fct_reorder(neighbourhood, n)) %>% 
-  plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood, type = "bar", colors = "viridis")
-```
 
 
-## ggplotly
-
-```{r}
-tmp_plot = 
-  nyc_airbnb %>% 
-    ggplot(aes(x = lat, y = long, color = price)) +
-    geom_point()
-
-ggplotly(tmp_plot)
-```
 
 
 
