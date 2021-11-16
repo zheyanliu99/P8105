@@ -178,6 +178,7 @@ We can use this function to read the five pages of reviews on the URLs defined i
 ```{r}
 url_base = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
 vec_urls = str_c(url_base, 1:5)
+vec_urls
 ```
 
 ```{r}
