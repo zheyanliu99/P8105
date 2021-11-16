@@ -1,0 +1,160 @@
+---
+title: "Linear_models"
+author: "Zheyan"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(p8105.datasets)
+
+set.seed(1)
+```
+
+# Model fitting
+
+```{r}
+data("nyc_airbnb")
+
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(stars = review_scores_location / 2) %>% 
+  rename(
+    borough = neighbourhood_group,
+    neighborhood = neighbourhood) %>% 
+  filter(borough != "Staten Island") %>% 
+  select(price, stars, borough, neighborhood, room_type)
+
+nyc_airbnb
+```
+
+An good place to start is to consider price as an outcome that may depend on rating and borough. We fit that initial model in the following code.
+
+```{r}
+fit = lm(price ~ stars + borough, data = nyc_airbnb)
+summary(fit)
+```
+
+The lm function begins with the formula specification – outcome on the left of the ~ and predictors separated by + on the right. As we’ll see shortly, interactions between variables can be specified using *. You can also specify an intercept-only model (outcome ~ 1), a model with no intercept (outcome ~ 0 + ...), and a model using all available predictors (outcome ~ .).
+
+R will treat categorical (factor) covariates appropriately and predictably: indicator variables are created for each non-reference category and included in your model, and the factor level is treated as the reference. As with ggplot, being careful with factors is therefore critical!
+
+```{r}
+
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(
+    borough = fct_infreq(borough),
+    room_type = fct_infreq(room_type))
+
+
+fit = lm(price ~ stars + borough, data = nyc_airbnb)
+summary(fit)
+```
+If you want to present sth....
+
+
+```{r}
+fit %>%  
+  broom::tidy() %>%
+  mutate(term = str_replace(term, 'borough', 'Borough:')) %>% 
+  select(term, estimate, p.value)
+  
+```
+
+It’s important to note that changing reference categories won’t change “fit” or statistical sigificance, but can affect ease of interpretation.
+
+
+# Diagnosis
+
+```{r}
+modelr::add_residuals(nyc_airbnb, fit) %>% 
+  ggplot(aes(x = resid)) +
+  geom_density() +
+  xlim(-250, 250)
+```
+
+## Interactions? Nesting?
+
+Let's try a different 
+
+```{r}
+nyc_airbnb %>% 
+  lm(price ~ stars * borough + room_type * borough, data = .) %>% 
+  broom::tidy() %>% 
+  knitr::kable(digits = 3)
+```
+
+Try nesting
+
+```{r}
+nest_lm_res =
+  nyc_airbnb %>% 
+  nest(data = -borough) %>% 
+  mutate(
+    models = map(data, ~lm(price ~ stars + room_type, data = .x)),
+    results = map(models, broom::tidy)) %>% 
+  select(-data, -models) %>% 
+  unnest(results)
+
+
+nest_lm_res
+```
+
+
+Show model result of nesting data
+
+```{r}
+nest_lm_res %>% 
+  select(borough, term, estimate) %>% 
+  mutate(term = fct_inorder(term)) %>% 
+  pivot_wider(
+    names_from = term, values_from = estimate) %>% 
+  knitr::kable(digits = 3)
+```
+
+```{r}
+manhattan_airbnb =
+  nyc_airbnb %>% 
+  filter(borough == "Manhattan")
+
+manhattan_nest_lm_res =
+  manhattan_airbnb %>% 
+  nest(data = -neighborhood) %>% 
+  mutate(
+    models = map(data, ~lm(price ~ stars + room_type, data = .x)),
+    results = map(models, broom::tidy)) %>% 
+  select(-data, -models) %>% 
+  unnest(results)
+
+manhattan_nest_lm_res
+```
+
+Look at neighborhoods in Manhattan ...
+
+```{r}
+manhattan_nest_lm_res %>% 
+  filter(str_detect(term, "room_type")) %>% 
+  ggplot(aes(x = neighborhood, y = estimate)) + 
+  geom_point() + 
+  facet_wrap(~term) + 
+  theme(axis.text.x = element_text(angle = 80, hjust = 1))
+
+manhattan_nest_lm_res
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
