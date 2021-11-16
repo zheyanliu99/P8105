@@ -141,15 +141,66 @@ manhattan_nest_lm_res %>%
   facet_wrap(~term) + 
   theme(axis.text.x = element_text(angle = 80, hjust = 1))
 
-manhattan_nest_lm_res
+manhattan_nest_lm_res %>% 
+  distinct(term)
 
 ```
 
+## sth beyond course
+
+With this many factor levels, it really isn’t a good idea to fit models with main effects or interactions for each. Instead, you’d be best-off using a mixed model, with random intercepts and slopes for each neighborhood. 
+
+```{r}
+install.packages('broom.mixed')
+manhattan_airbnb %>% 
+  lme4::lmer(price ~ stars + room_type + (1 + room_type | neighborhood), data = .) %>% 
+  broom.mixed::tidy()
+```
 
 
+# binary outcomes
+
+data
+
+```{r}
+baltimore_df = 
+  read_csv("data/homicide-data.csv") %>% 
+  filter(city == "Baltimore") %>% 
+  mutate(
+    resolved = as.numeric(disposition == "Closed by arrest"),
+    victim_age = as.numeric(victim_age),
+    victim_race = fct_relevel(victim_race, "White")) %>% 
+  select(resolved, victim_age, victim_race, victim_sex)
+
+baltimore_df
+```
 
 
+model  
 
+```{r}
+fit_logistic = 
+  baltimore_df %>% 
+  glm(resolved ~ victim_age + victim_race + victim_sex, data = ., family = binomial()) 
+
+fit_logistic
+```
+
+```{r}
+fit_logistic %>% 
+  broom::tidy() %>% 
+  mutate(OR = exp(estimate)) %>%
+  select(term, log_OR = estimate, OR, p.value) %>% 
+  knitr::kable(digits = 3)
+```
+
+Give fitted result
+
+```{r}
+baltimore_df %>% 
+  modelr::add_predictions(fit_logistic) %>% 
+  mutate(fitted_prob = boot::inv.logit(pred))
+```
 
 
 
