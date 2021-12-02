@@ -1,0 +1,205 @@
+---
+title: "Bootstrap"
+author: "Zheyan"
+date: "11/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(p8105.datasets)
+
+set.seed(1)
+```
+
+## simulate a data set
+
+```{r}
+n_samp = 250
+
+sim_df_const = 
+  tibble(
+    x = rnorm(n_samp, 1, 1),
+    error = rnorm(n_samp, 0, 1),
+    y = 2 + 3 * x + error
+  )
+
+sim_df_nonconst = sim_df_const %>% 
+  mutate(
+  error = error * .75 * x,
+  y = 2 + 3 * x + error
+)
+```
+
+Make a plot
+
+```{r}
+sim_df = 
+  bind_rows(const = sim_df_const, nonconst = sim_df_nonconst, .id = "data_source") 
+
+sim_df %>% 
+  ggplot(aes(x = x, y = y)) + 
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm") +
+  facet_grid(~data_source) 
+```
+
+
+```{r}
+sim_df_nonconst %>% 
+  lm(y ~ x, data = .) %>% 
+  broom::tidy()
+```
+
+## Let's try to use the bootstrap for inference
+
+Do a bootstrap
+
+```{r}
+bootstrap_sample = 
+  sim_df_nonconst %>% 
+    sample_frac(size = 1, replace = TRUE) %>% 
+    arrange(x)
+
+lm(y~x, data = bootstrap_sample)
+```
+
+
+Now, we'll make a tibble to keep track of everything.
+
+```{r}
+boot_sample = function(df) {
+  sample_frac(df, replace = TRUE)
+}
+
+boot_straps = 
+  data_frame(
+    strap_number = 1:1000,
+    strap_sample = rerun(1000, boot_sample(sim_df_nonconst))
+  )
+
+boot_straps
+```
+
+
+From here ... things are kinda the same as 'always'
+
+```{r}
+bootstrap_results = 
+  boot_straps %>% 
+    mutate(
+      models = map(.x = strap_sample, ~lm(y ~ x, data = .x)),
+      results = map(models, broom::tidy)
+    ) %>% 
+    select(strap_number, results) %>% 
+    unnest(results)
+
+```
+
+
+Plot results
+
+```{r}
+bootstrap_results %>% 
+  ggplot(aes(x = estimate)) +
+  geom_histogram() +
+  facet_grid(~term, scales = 'free')
+  
+```
+
+Compare real and bootstrapped
+
+```{r}
+sim_df_nonconst %>% 
+  lm(y ~ x, data = .) %>% 
+  broom::tidy()
+
+bootstrap_results %>% 
+  group_by(term) %>% 
+  summarise(
+    mean = mean(estimate),
+    se = sd(estimate)
+  )
+```
+
+
+## Use `modelr`
+
+
+```{r}
+sim_df_nonconst %>% 
+  bootstrap(n = 1000, id = 'stop_number') %>% 
+  mutate(
+    models = map(.x = strap, ~lm(y ~ x, data = .x)),
+    results = map(models, broom::tidy)
+  )
+
+```
+
+
+## Airbnb
+
+Read data
+
+```{r}
+data("nyc_airbnb")
+
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(stars = review_scores_location / 2) %>% 
+  rename(
+    borough = neighbourhood_group,
+    neighborhood = neighbourhood) %>% 
+  filter(borough != "Staten Island") %>% 
+  drop_na(price, stars) %>% 
+  select(price, stars, borough, neighborhood, room_type)
+```
+
+I’ll make a quick plot showing these data, with particular emphasis on the features I’m interested in analyzing: price as an outcome with stars and room_type as covariates.
+
+```{r}
+nyc_airbnb %>% 
+  ggplot(aes(x = stars, y = price, color = room_type)) + 
+  geom_point() 
+```
+
+In this plot (and in linear models, we noticed that some large outliers in price might affect estimates and inference for the association between star rating and price. Because estimates are likely to be sensitive to those outliers and “usual” rules for inference may not apply, the code chunk below uses the bootstrap to examine the distribution of regression coefficients under repeated sampling.
+
+```{r}
+nyc_airbnb %>% 
+  filter(borough == "Manhattan") %>% 
+  modelr::bootstrap(n = 1000) %>% 
+  mutate(
+    models = map(strap, ~ lm(price ~ stars + room_type, data = .x)),
+    results = map(models, broom::tidy)) %>% 
+  select(results) %>% 
+  unnest(results) %>% 
+  filter(term == "stars") %>% 
+  ggplot(aes(x = estimate)) + geom_density()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
